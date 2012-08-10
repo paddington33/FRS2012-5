@@ -1,0 +1,15 @@
+<package>
+  <description brief="botthree">
+
+     botthree
+
+  </description>
+  <author>FRS2012g5</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/botthree</url>
+  <depend package="roscpp"/>
+
+</package>
+
+
