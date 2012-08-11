@@ -1,8 +1,12 @@
 #Commit everything to git
-git add *
-git commit -m "Add all auto"
-git push origin master
+#git add *
+#git commit -m "Add all auto"
+#git push origin master
 #Logon to ssh
-ssh frs2012-5@10.126.47.226
-echo fieldrobot
-
+ssh frs2012-5@10.126.47.226 << EOF
+	source ~/.bashrc
+	echo $ROS_PACKAGE_PATH
+EOF
+#roscd botthree
+#cd ..
+#git pull origin master
