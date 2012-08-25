@@ -1,0 +1,1 @@
+/usr/bin/c++   -O2 -g     -pthread CMakeFiles/LRS_driver.dir/src/LaserRangeScanner/LRS_driver.o  -o ../bin/LRS_driver -rdynamic -L/opt/ros/fuerte/lib -lroscpp -lrostime -lrosconsole -lroscpp_serialization -lxmlrpcpp -lLMS1xx -Wl,-rpath,/opt/ros/fuerte/lib 

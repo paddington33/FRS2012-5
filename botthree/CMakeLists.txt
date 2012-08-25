@@ -31,3 +31,13 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
 rosbuild_add_executable(talker src/talker/talker.cpp)
 rosbuild_add_executable(listener src/listener/listener.cpp)
+
+include_directories(/usr/include/)
+link_directories(/usr/lib/)
+
+target_link_libraries(talker /usr/lib/libLMS1xx.so)
+
+#IF(EXISTS /usr/lib/libLMS1xx.so)
+#    rosbuild_add_executable(lms111_node src/local_sensors/lms111_node.cpp)
+#    target_link_libraries(lms111_node /usr/lib/libLMS1xx.so)
+#ENDIF(EXISTS /usr/lib/libLMS1xx.so)

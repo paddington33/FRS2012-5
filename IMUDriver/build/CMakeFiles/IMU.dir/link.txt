@@ -1,0 +1,1 @@
+/usr/bin/c++   -O2 -g     -pthread CMakeFiles/IMU.dir/src/sparkfun_razor_node.o CMakeFiles/IMU.dir/src/SparkFun9DOF.o  -o ../bin/IMU -rdynamic -L/opt/ros/fuerte/lib -lroscpp -lrostime -lrosconsole -lroscpp_serialization -lxmlrpcpp -Wl,-rpath,/opt/ros/fuerte/lib 

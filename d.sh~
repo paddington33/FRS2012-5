@@ -1,0 +1,4 @@
+cd ~/fuerte_workspace
+git pull origin master
+cd botthree
+make

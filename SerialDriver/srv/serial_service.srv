@@ -1,0 +1,4 @@
+string outMessage
+int16 size
+---
+string inMessage

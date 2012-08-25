@@ -1,0 +1,9 @@
+Header header
+float32 servo_angle1
+float32 servo_angle2
+float32 time1
+float32 time2
+float32 omega1
+float32 omega2
+float32 omega3
+float32 omega4

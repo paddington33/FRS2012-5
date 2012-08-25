@@ -1,0 +1,16 @@
+<package>
+  <description brief="TOSNET_rom_reader">
+
+     TOSNET_rom_reader
+
+  </description>
+  <author>FRS2012g5</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/TOSNET_rom_reader</url>
+  <depend package="roscpp"/>
+  <depend package="TOSNETDriver"/>
+
+</package>
+
+

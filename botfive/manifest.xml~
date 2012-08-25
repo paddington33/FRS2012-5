@@ -1,0 +1,16 @@
+<package>
+  <description brief="botfive">
+
+     botfive
+
+  </description>
+  <author>FRS2012g5</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/botfive</url>
+  <depend package="roscpp"/>
+  <depend package="fmMsgs"/>	
+
+</package>
+
+

@@ -1,0 +1,16 @@
+<package>
+  <description brief="botI">
+
+     botI
+
+  </description>
+  <author>FRS2012g5</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/botI</url>
+  <depend package="roscpp" />
+  <depend package="TOSNETDriver" />
+
+</package>
+
+

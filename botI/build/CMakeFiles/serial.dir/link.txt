@@ -1,0 +1,1 @@
+/usr/bin/c++   -O2 -g     -pthread CMakeFiles/serial.dir/src/Serial/main.o CMakeFiles/serial.dir/src/Serial/SerialService.o CMakeFiles/serial.dir/src/Serial/serial.o  -o ../bin/serial -rdynamic -L/opt/ros/fuerte/lib -lroscpp -lrostime -lrosconsole -lroscpp_serialization -lxmlrpcpp -lboost_system-mt -lboost_thread-mt -Wl,-rpath,/opt/ros/fuerte/lib 

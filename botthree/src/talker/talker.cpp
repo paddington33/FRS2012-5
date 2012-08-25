@@ -1,85 +1,169 @@
+#include <csignal>
+#include <cstdio>
+#include <LMS1xx.h>
 #include "ros/ros.h"
-#include "std_msgs/String.h"
+#include "sensor_msgs/LaserScan.h"
 
-#include <sstream>
+#define DEG2RAD M_PI/180.0
+#define MAXRETRYES 120
 
-/**
- * This tutorial demonstrates simple sending of messages over the ROS system.
- */
 int main(int argc, char **argv)
 {
-  /**
-   * The ros::init() function needs to see argc and argv so that it can perform
-   * any ROS arguments and name remapping that were provided at the command line. For programmatic
-   * remappings you can use a different version of init() which takes remappings
-   * directly, but for most command-line programs, passing argc and argv is the easiest
-   * way to do it.  The third argument to init() is the name of the node.
-   *
-   * You must call one of the versions of ros::init() before using any other
-   * part of the ROS system.
-   */
-  ros::init(argc, argv, "talker");
 
-  /**
-   * NodeHandle is the main access point to communications with the ROS system.
-   * The first NodeHandle constructed will fully initialize this node, and the last
-   * NodeHandle destructed will close down the node.
-   */
-  ros::NodeHandle n;
+  /* laser data */
+  LMS1xx laser;
+  scanCfg cfg;
+  scanDataCfg dataCfg;
+  scanData data;
 
-  /**
-   * The advertise() function is how you tell ROS that you want to
-   * publish on a given topic name. This invokes a call to the ROS
-   * master node, which keeps a registry of who is publishing and who
-   * is subscribing. After this advertise() call is made, the master
-   * node will notify anyone who is trying to subscribe to this topic name,
-   * and they will in turn negotiate a peer-to-peer connection with this
-   * node.  advertise() returns a Publisher object which allows you to
-   * publish messages on that topic through a call to publish().  Once
-   * all copies of the returned Publisher object are destroyed, the topic
-   * will be automatically unadvertised.
-   *
-   * The second parameter to advertise() is the size of the message queue
-   * used for publishing messages.  If messages are published more quickly
-   * than we can send them, the number here specifies how many messages to
-   * buffer up before throwing some away.
-   */
-  ros::Publisher chatter_pub = n.advertise<std_msgs::String>("chatter", 1000);
+  /* published data */
+  sensor_msgs::LaserScan scan_msg;
 
-  ros::Rate loop_rate(10);
+  /* parameters */
+  std::string host;
+  std::string topic_id;
+  std::string frame_id;
+  bool invert;
 
-  /**
-   * A count of how many messages we have sent. This is used to create
-   * a unique string for each message.
-   */
-  int count = 0;
-  while (ros::ok())
+  /* variables */
+  int retrycount = 0;
+
+  ros::init(argc, argv, "LMS111_node");
+  ros::NodeHandle nh;
+  ros::NodeHandle n("~");
+
+  n.param<std::string> ("host", host, "192.168.0.10");
+  n.param<std::string> ("topic_id", topic_id, "scan_msg");
+  n.param<std::string> ("frame_id", frame_id, "/map");
+  n.param<bool> ("invert_output",invert,false);
+
+  ros::Publisher scan_pub = nh.advertise<sensor_msgs::LaserScan> (topic_id, 1);
+
+  ROS_INFO("Connecting to device at : %s", host.c_str());
+
+  /* initialize hardware */
+  laser.connect(host);
+
+  if (laser.isConnected())
   {
-    /**
-     * This is a message object. You stuff it with data, and then publish it.
-     */
-    std_msgs::String msg;
 
-    std::stringstream ss;
-    ss << "hello Daniel " << count;
-    msg.data = ss.str();
+    ROS_INFO("Connected to device at : %s", host.c_str());
 
-    ROS_INFO("%s", msg.data.c_str());
+    laser.login();
+    cfg = laser.getScanCfg();
 
-    /**
-     * The publish() function is how you send messages. The parameter
-     * is the message object. The type of this object must agree with the type
-     * given as a template parameter to the advertise<>() call, as was done
-     * in the constructor above.
-     */
-    chatter_pub.publish(msg);
+    scan_msg.header.frame_id = frame_id;
 
-    ros::spinOnce();
+    scan_msg.range_min = 0.01;
+    scan_msg.range_max = 6.0;
 
-    loop_rate.sleep();
-    ++count;
+    scan_msg.scan_time = 100.0 / cfg.scaningFrequency;
+
+    scan_msg.angle_increment = cfg.angleResolution / 10000.0 * DEG2RAD;
+    scan_msg.angle_min = cfg.startAngle / 10000.0 * DEG2RAD - M_PI / 2;
+    scan_msg.angle_max = cfg.stopAngle / 10000.0 * DEG2RAD - M_PI / 2;
+
+    //std::cout << "res : " << cfg.angleResolution << " freq : " << cfg.scaningFrequency << std::endl;
+
+    int num_values;
+    if (cfg.angleResolution == 2500)
+    {
+      num_values = 1081;
+    }
+    else if (cfg.angleResolution == 5000)
+    {
+      num_values = 541;
+    }
+    else
+    {
+      ROS_ERROR("Unsupported resolution");
+      return 0;
+    }
+
+    scan_msg.time_increment = scan_msg.scan_time / num_values;
+
+    scan_msg.ranges.resize(num_values);
+    scan_msg.intensities.resize(num_values);
+
+    dataCfg.outputChannel = 1;
+    dataCfg.remission = true;
+    dataCfg.resolution = 1;
+    dataCfg.encoder = 0;
+    dataCfg.position = false;
+    dataCfg.deviceName = false;
+    dataCfg.outputInterval = 1;
+
+    laser.setScanDataCfg(dataCfg);
+
+    laser.startMeas();
+
+    status_t stat;
+    do // wait for ready status
+    {
+      retrycount++;
+      stat = laser.queryStatus();
+      ros::Duration(1.0).sleep();
+    } while ((stat != ready_for_measurement) && retrycount < MAXRETRYES);
+
+    if (stat == ready_for_measurement)
+    {
+      ROS_INFO("Device ready - receiving measurement");
+      laser.scanContinous(1);
+
+      while (ros::ok())
+      {
+        ros::Time start = ros::Time::now();
+
+        scan_msg.header.stamp = start;
+        ++scan_msg.header.seq;
+
+        laser.getData(data);
+
+        if(invert == false)
+        {
+			for (int i = 0; i < data.dist_len1; i++)
+			{
+			  scan_msg.ranges[i] = data.dist1[i] * 0.001;
+			}
+
+			for (int i = 0; i < data.rssi_len1; i++)
+			{
+			  scan_msg.intensities[i] = data.rssi1[i];
+			}
+        }
+        else
+        {
+			for (int i = 0; i < data.dist_len1; i++)
+			{
+			  scan_msg.ranges[i] = data.dist1[data.dist_len1 - i - 1] * 0.001;
+			}
+
+			for (int i = 0; i < data.rssi_len1; i++)
+			{
+			  scan_msg.intensities[i] = data.rssi1[data.rssi_len1 - i- 1];
+			}
+        }
+
+        scan_pub.publish(scan_msg);
+
+        ros::spinOnce();
+      }
+
+      laser.scanContinous(0);
+      laser.stopMeas();
+      laser.disconnect();
+    }
+    else
+    {
+      ROS_ERROR("Device not ready for measurement");
+      return 0;
+    }
   }
-
-
+  else
+  {
+    ROS_ERROR("Connection to device @ %s failed", host.c_str());
+  }
   return 0;
+
 }
+
